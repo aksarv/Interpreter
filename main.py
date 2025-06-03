@@ -1,3 +1,7 @@
+"""
+To implement - if and while statements. Though this will need explicit lexing to be done first. After that variable scoping can be implemented with a stack etc.
+"""
+
 def indent(i):
     return " " * (4 * i)
 
