@@ -1,5 +1,8 @@
 """
-To implement - if and while statements. Though this will need explicit lexing to be done first. After that variable scoping can be implemented with a stack etc.
+Need to implement these:
+- while loop
+- for loop
+- stack-based variable scoping
 """
 
 def indent(i):
@@ -132,6 +135,11 @@ class Interpreter:
             return "EOF"
         return self.tokens[self.pos + 1]
 
+    def nextNextNextToken(self):
+        if self.pos + 2 >= len(self.tokens):
+            return "EOF"
+        return self.tokens[self.pos + 2]
+
     def eat(self, token):
         if self.nextToken() != token:
             if token == ")":
@@ -139,7 +147,7 @@ class Interpreter:
             elif token == "(":
                 raise SyntaxError(f"unexpected left parenthesis")
             else:
-                raise SyntaxError(f"invalid syntax")
+                raise SyntaxError(f"invalid syntax (unexpected token '{self.nextToken()}')")
         self.pos += 1
 
     def parseString(self):
@@ -229,6 +237,24 @@ class Interpreter:
             except KeyError:
                 raise Error("Undefined global variable referenced before assignment")
 
+    def parseConditional(self):
+        self.eat("i")
+        self.eat("f")
+        self.eat("(")
+        condExpr = self.parseExpr()
+        self.eat(")")
+        self.eat("{")
+        statements = []
+        while self.nextToken() != "}":
+            if self.nextToken() == "i" and self.nextNextToken() == "f" and self.nextNextNextToken() == "(":
+                statements.append(self.parseConditional())
+            else:
+                statements.append(self.parseAssignment())
+            if self.nextToken() == ";":
+                self.eat(";")
+        self.eat("}")
+        return Conditional(condExpr, statements)
+
     def evaluateExpr(self, expr):
         prevValue = self.evaluateSubExpr(expr.subExpr)
         for extendExpr in expr.extendExprs:
@@ -275,10 +301,13 @@ while True:
         break
     interpreter.tokens = list(line.replace(" ", ""))
     interpreter.pos = 0
-    try:
-        interpreter.parseAssignment()
-    except SyntaxError:
-        interpreter.tokens = list(line.replace(" ", ""))
-        interpreter.pos = 0
-        parsed = interpreter.parseExpr()
-        print(interpreter.evaluateExpr(parsed))
+    if line.startswith("if("):
+        interpreter.parseConditional()
+    else:
+        try:
+            interpreter.parseAssignment()
+        except SyntaxError:
+            interpreter.tokens = list(line.replace(" ", ""))
+            interpreter.pos = 0
+            parsed = interpreter.parseExpr()
+            print(interpreter.evaluateExpr(parsed))
